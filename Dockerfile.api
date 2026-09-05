@@ -1,12 +1,24 @@
-FROM python:3.11-slim
+# ---------- Stage 1: Builder ----------
+FROM python:3.11 AS builder
 
 WORKDIR /app
 
 COPY requirements-api.txt .
-RUN pip install --no-cache-dir -r requirements-api.txt
+RUN pip install --user --no-cache-dir -r requirements-api.txt
+
+# ---------- Stage 2: Runtime ----------
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
 
 COPY src/ src/
-COPY models/ models/   
+COPY models/ models/
 
 EXPOSE 8000
 
